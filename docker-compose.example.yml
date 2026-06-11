@@ -35,14 +35,13 @@ services:
     restart: always
     container_name: ${VIRTUOSO_CONTAINER:-my-virtuoso}
     # Uncomment to persist Virtuoso database and enable data loading:
-    volumes:
-       - ./db:/database  # Create directory first: mkdir -p db/data
+    # volumes:
+    #   - ./db:/database  # Create directory first: mkdir -p db/data
     environment:
       # Database administrator password (change in production!)
       - DBA_PASSWORD=${VIRTUOSO_PASSWORD:-dba123}
       # Set to 'true' to allow SPARQL UPDATE queries
       - SPARQL_UPDATE=${SPARQL_UPDATE:-false}
-      # /tmp is in Virtuoso's default DirsAllowed — load scripts use it for bulk loading
     ports:
       # Virtuoso HTTP interface and SPARQL endpoint
       - "${VIRTUOSO_HTTP_PORT:-8890}:8890"
@@ -56,10 +55,6 @@ services:
     build: .
     restart: always
     container_name: ${SNORQL_CONTAINER:-my-snorql}
-    depends_on:
-      # makes sure that SNORQL starts after Virtuoso (if used)
-      - virtuoso
-
     # Uncomment to use local files for development:
     # volumes:
     #   - ./:/usr/local/apache2/htdocs
@@ -77,7 +72,7 @@ services:
       - SNORQL_TITLE=${SNORQL_TITLE:-My SPARQL Explorer}
 
       # Default RDF graph (leave empty for default behavior)
-      # - DEFAULT_GRAPH=${DEFAULT_GRAPH:-}
+      - DEFAULT_GRAPH=${DEFAULT_GRAPH:-}
     ports:
       # Snorql web interface
       - "${SNORQL_PORT:-8088}:80"
