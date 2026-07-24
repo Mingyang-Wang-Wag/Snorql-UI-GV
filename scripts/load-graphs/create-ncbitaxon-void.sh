@@ -86,7 +86,7 @@ cat > "$VOID_FILE" <<EOF
     dcterms:source <http://purl.obolibrary.org/obo/ncbitaxon.owl> ;
     dcterms:references <http://purl.obolibrary.org/obo/ncbitaxon.owl> ;
     void:vocabulary <http://purl.obolibrary.org/obo/NCBITaxon_> ;
-    void:sparqlEndpoint <https://sparql-plantmetwiki.bioinformatics.nl/sparql> ;
+    void:sparqlEndpoint <https://plantmetwiki.bioinformatics.nl/sparql> ;
     pav:createdOn "${TODAY}"^^xsd:date ;
     dcterms:modified "${TODAY}"^^xsd:date ;
     dcterms:publisher <http://rdf-plantmetwiki.bioinformatics.nl/organization/wur-plant-sciences> ;
