@@ -1,0 +1,117 @@
+<!-- basic setting -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Graph Visualization</title>
+	<link rel="stylesheet" type="text/css" href="assets/css/bootstrap.min.css" /> <!-- loading boostrap (appearance rules) -->
+	<script type="text/javascript" src="assets/js/cytoscape.min.js"></script> <!-- load cytoscape -->
+	<style>
+		body { padding: 15px; }
+		#query-display, #results-display {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+			background: #f5f5f5;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			padding: 10px;
+		}
+		#query-display { min-height: 60px; }
+		#results-display { min-height: 100px; max-height: 350px; overflow-y: auto; }
+	</style>
+</head>
+<!-- the text and canvas in the popup -->
+<body>
+	<h4>Graph Visualization</h4>  <!-- header -->
+
+	<p class="text-muted">Test graph:</p>
+	<div id="graph-container" style="height: 500px; border: 1px solid #ddd;"></div> <!-- the drawing area -->
+
+    <p class="text-muted">Answer from the Python server:</p>
+    <pre id="server-answer"></pre>
+
+	<p class="text-muted">Your current SPARQL query:</p>
+	<pre id="query-display"></pre>
+
+	<p class="text-muted">Raw database output (this is what the graph will be built from):</p>
+	<pre id="results-display"></pre>
+<!-- The logic part -->
+	<script type="text/javascript">
+		// Both values are passed from the main page via sessionStorage
+		// (both pages belong to the same site, so they share it).
+
+		// 1. The query text, saved when the button was clicked.
+        var query = sessionStorage.getItem("graphVizQuery");       // read the stored query text
+        var queryBox = document.getElementById("query-display");   // find text box 1
+
+        if (query && query.trim() !== "") {
+            queryBox.textContent = query;                      // real query -> show it
+        } else {
+            queryBox.textContent = "(the query box is empty)"; // nothing or only spaces -> message
+        }
+		// 2. The raw SPARQL JSON results, saved when the table was rendered.
+		var resultsText = sessionStorage.getItem("graphVizResults");
+		var resultsBox = document.getElementById("results-display");
+		if (resultsText) {
+			try {
+				var results = JSON.parse(resultsText);
+				// Pretty-print with 2-space indentation so it is readable.
+				resultsBox.textContent = JSON.stringify(results, null, 2);
+			} catch (e) {
+				resultsBox.textContent = "(could not read the stored results: " + e.message + ")";
+			}
+		} else {
+			resultsBox.textContent =
+				"(no results yet - press the Query button on the main page first, " +
+				"then click Graph Visualization again)";
+		}
+
+// 3. Send the stored results to the Python server, then draw its answer.
+var serverAnswerBox = document.getElementById("server-answer");
+
+if (resultsText) {
+    fetch("http://localhost:5000/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: resultsText
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (answer) {
+        serverAnswerBox.textContent = JSON.stringify(answer, null, 2);
+        drawGraph(answer);
+    })
+    .catch(function (error) {
+        serverAnswerBox.textContent = "Could not reach the Python server: " + error;
+    });
+} else {
+    serverAnswerBox.textContent = "(no results to send)";
+}
+
+// 4. Draw the nodes and edges with Cytoscape.
+function drawGraph(answer) {
+    var elements = [];
+
+    for (var i = 0; i < answer.nodes.length; i++) {
+        var node = answer.nodes[i];
+        elements.push({ data: { id: node.id, label: node.label } });
+    }
+
+    for (var j = 0; j < answer.edges.length; j++) {
+        var edge = answer.edges[j];
+        elements.push({ data: { source: edge.source, target: edge.target, label: edge.label } });
+    }
+
+    var cy = cytoscape({
+        container: document.getElementById("graph-container"),
+        elements: elements,
+        style: [
+            { selector: "node", style: { "label": "data(label)", "background-color": "#59a14f" } },
+            { selector: "edge", style: { "label": "data(label)", "font-size": 10,
+                                         "target-arrow-shape": "triangle", "curve-style": "bezier" } }
+        ],
+        layout: { name: "cose" }
+    });
+}
+	</script>
+</body>
+</html>

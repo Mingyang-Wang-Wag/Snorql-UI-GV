@@ -1,5 +1,7 @@
-var _endpoint = "https://sparql.wikipathways.org/sparql/";
-var _examples_repo = "https://github.com/wikipathways/SPARQLQueries";
+//the database talker
+
+var _endpoint = "https://plantmetwiki.bioinformatics.nl/sparql"; // connect to plantmetwiki
+var _examples_repo = "https://github.com/pathway-lod/SPARQLQueries"; //provide the example queries, they lives in github repository
 var _defaultGraph = "";
 var _namespaces = snorql_namespacePrefixes;
 
@@ -301,7 +303,21 @@ function display(node, whereID) {
 
 function displayResult(json, resultTitle) {
 
-    var div = document.createElement('div');
+
+    //newly added for graph visualization
+    // Keep a copy of the raw database output, json into sessionStorgae, so the graph.html can read it
+    //sessionstorage is a small storage area built into the browser, web page can save short pieces of data and read them back later.
+    //why we need this? because the query text and result are variables, the variable belongs to one page, and when graph.html opens, it starts with its own empty
+    //so the data must pass through sth that both pages can access, and all data will pass through this function, sessionStorage will store them
+
+    try {
+        sessionStorage.setItem("graphVizResults", JSON.stringify(json)); //convert the json into long text because sessionStorage can only store text. and save that text under the key (graphVizResults)
+    } catch (e) {
+        sessionStorage.removeItem("graphVizResults");
+        //when setItem failed most likely when the result is bigger than the storage limit, it removes the old stored value
+    }
+
+    var div = document.createElement('div'); // create an empty div element in the memory
 
     var resCount = document.createElement("small");
     resCount.classList.add("text-muted");
@@ -312,6 +328,7 @@ function displayResult(json, resultTitle) {
     title.appendChild(resCount);
     div.appendChild(title);
 
+    //if the row count is 0, insert a 'no result' into the div.
     if (json.results.bindings.length == 0) {
         var p = document.createElement('p');
         p.className = 'empty';

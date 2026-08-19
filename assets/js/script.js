@@ -1,8 +1,9 @@
-
+//script.js is connecting the button to actions, like: when this is clicked, do that
 (function ($) {
 
-jQuery(document).ready(function() {
-
+jQuery(document).ready(function() { // the index.html (webpage builder) build page as it read the lines, the script.js is before its button occurs
+                                         //keep this function, and run it only when the entire page has been read and built
+                                        // load the page but do not show until all code is loaded.
         var cookieDecision = getCookie('cookieDecision');
 
         if (cookieDecision == "" || cookieDecision == "reject") {
@@ -114,6 +115,17 @@ jQuery(document).ready(function() {
 
 		jQuery("#reset-button").on("click",function(){
             editor.getDoc().setValue("");
+        });
+
+
+        //newly added
+        //
+        jQuery("#graph-viz-button") .on("click",function(){ //search the page for the element with id graph-viz-button (from index.html)
+                                                                 //when this element is clicked, run the function {xxxxxx}
+            var query = editor.getDoc().getValue(); // get the query and store it as a string named 'query'
+            sessionStorage.setItem("graphVizQuery", query); //save the string under the key: graphVizQuery in sessionStorage so the popup can find it
+            window.open("graph.html", "graphVizWindow", // open the popup, graph.html is the page to load, graphVizWindow is the name for window
+                "width=1000,height=700,resizable=yes,scrollbars=yes"); //setting of the popup window
         });
 
         jQuery("#export-csv").on("click",function(){

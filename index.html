@@ -14,8 +14,11 @@
 	<link rel="stylesheet" type="text/css" href="assets/css/bootstrap-treeview.min.css" />
     <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
 
-	<script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/bootstrap.min.js"></script>
+
+    <!-- the below code means: load this javescript file, the orders matter -->
+
+	<script src="assets/js/jquery.min.js"></script> <!-- the scr is for loaded from another file -->
+    <script src="assets/js/bootstrap.min.js"></script> <!-- <script xxxxxx </script> in between is the code-->
 	
     <script src="assets/codemirror/lib/codemirror.js"></script>	
 	<script src="assets/codemirror/mode/javascript/javascript.js"></script>
@@ -72,6 +75,9 @@
 							  matchBrackets: true
 							});
 						</script>
+                        <!-- var editor: make a box called editor and put the following code into it
+						the rest is a bit too complicated to understand
+						-->
 					</div>
 				</div>
 				
@@ -85,6 +91,7 @@
 						<input id="generate-permalink" type="button" class="btn btn-secondary" value="Get Permalink" />
 						<input id="enter-fullscreen" type="button" class="btn btn-dark" value="Fullscreen Mode" />
 						<input id="show-prefixes" type="button" class="btn btn-light" value="Show Prefixes" />
+						<input id="graph-viz-button" type="button" class="btn btn-info" value="Graph Visualization" /> <!-- new graph visualization button -->
 					</div>
 				</div>
 				
@@ -144,7 +151,7 @@
 	</div>
 	
 	<div class="container-fluid">
-	
+
 		<div class="row">
 			<div class="col-md-12">
 				<div class="pre-scrollable" id="result"><span></span></div>
