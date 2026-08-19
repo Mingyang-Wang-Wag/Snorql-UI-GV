@@ -66,42 +66,42 @@
 				"then click Graph Visualization again)";
 		}
 
-// 3. Send the stored results to the Python server, then draw its answer.
-var serverAnswerBox = document.getElementById("server-answer");
+        // 3. Send the stored results to the Python server, then draw its answer.
+        var serverAnswerBox = document.getElementById("server-answer");
 
-if (resultsText) {
-    fetch("http://localhost:5000/graph", {
+        if (resultsText) {
+        fetch("http://localhost:5000/graph", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: resultsText
-    })
-    .then(function (response) { return response.json(); })
-    .then(function (answer) {
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (answer) {
         serverAnswerBox.textContent = JSON.stringify(answer, null, 2);
         drawGraph(answer);
-    })
-    .catch(function (error) {
+        })
+        .catch(function (error) {
         serverAnswerBox.textContent = "Could not reach the Python server: " + error;
-    });
-} else {
-    serverAnswerBox.textContent = "(no results to send)";
-}
+        });
+        } else {
+        serverAnswerBox.textContent = "(no results to send)";
+        }
 
-// 4. Draw the nodes and edges with Cytoscape.
-function drawGraph(answer) {
-    var elements = [];
+        // 4. Draw the nodes and edges with Cytoscape.
+        function drawGraph(answer) {
+        var elements = [];
 
-    for (var i = 0; i < answer.nodes.length; i++) {
+        for (var i = 0; i < answer.nodes.length; i++) {
         var node = answer.nodes[i];
         elements.push({ data: { id: node.id, label: node.label } });
-    }
+        }
 
-    for (var j = 0; j < answer.edges.length; j++) {
+        for (var j = 0; j < answer.edges.length; j++) {
         var edge = answer.edges[j];
         elements.push({ data: { source: edge.source, target: edge.target, label: edge.label } });
-    }
+        }
 
-    var cy = cytoscape({
+        var cy = cytoscape({
         container: document.getElementById("graph-container"),
         elements: elements,
         style: [
@@ -110,8 +110,8 @@ function drawGraph(answer) {
                                          "target-arrow-shape": "triangle", "curve-style": "bezier" } }
         ],
         layout: { name: "cose" }
-    });
-}
+        });
+        }
 	</script>
 </body>
 </html>
