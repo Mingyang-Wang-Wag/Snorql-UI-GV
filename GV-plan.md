@@ -193,3 +193,30 @@ Key facts supporting this design:
       Flask (:5000) → parse/filter/label in Python → {nodes, edges} →
       Cytoscape drawing ("a sugar" --isPartOf--> "Thioglucosidase")
 - After the demo: schema design → data download/integration → graph tuning
+
+---
+
+## PHASE SHIFT (2026-08-19, after supervisor feedback)
+
+Supervisor + user agreed: the code/visualization part is the more
+straightforward piece; the core thesis work is **new data introduction and
+integration** into PlantMetWiki. Focus moves there now.
+
+The graph pipeline stays as-is (working demo, committed) and will be tuned
+again once the new data is in. Coming work is Python-centric:
+1. Identify and download the new source data
+2. Design the schema: entity types, relations, how new data links to the
+   existing PlantMetWiki structure (building on earlier findings: isPartOf /
+   hasDataNode are the meaningful relations; /Comment/ and GPML drawing
+   metadata are noise)
+3. Transform the source data to RDF matching the schema
+4. Load it into PlantMetWiki (Virtuoso)
+5. Revisit the graph visualization with the richer data
+
+---
+
+## Step 6 (IN PROGRESS, 2026-08-21) — Handle any query, not just ?s ?p ?o
+
+2026-08-25: make `graph()` in `server.py` work with any SPARQL query
+that returns at least 3 columns — not just ones literally named `s`, `p`, `o`.
+
