@@ -215,8 +215,21 @@ again once the new data is in. Coming work is Python-centric:
 
 ---
 
-## Step 6 (IN PROGRESS, 2026-08-21) — Handle any query, not just ?s ?p ?o
+## Step 6 (Done, 2026-08-26) — Handle any query, not just ?s ?p ?o
 
 2026-08-25: make `graph()` in `server.py` work with any SPARQL query
 that returns at least 3 columns — not just ones literally named `s`, `p`, `o`.
 
+2026-08-26: Fixed: reads column names from data["head"]["vars"] instead of 
+hardcoding row["s"]/["p"]/["o"] (anything else will crash); tested with both 
+the original ?s ?p ?o query and a renamed ?gene ?relation ?target  version.
+
+But still need at least 3 columns, always treat column 1, 2, 3 as subject,
+predicate and target individually.
+
+## Step 7 (In progress, 2026-08-26) -- adding one more relation, hasDadaNode
+2026-08-26: added `hasDataNode` to wanted_relations — confirmed a new 
+hasDataNode edge appears in the graph.
+why add these two?
+because these two were specifically identified as the biological meaningful one
+everything else risks being noise, like drawing coordinates, GPML layout info.

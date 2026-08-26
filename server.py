@@ -11,7 +11,7 @@ app = Flask(__name__)            # create the server object
 CORS(app) #all answer will carry a certified marker to pass now
 
 endpoint = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
-wanted_relations = ['isPartOf'] #the only relation kept
+wanted_relations = ['isPartOf', 'hasDataNode'] #the only relation kept
 
 def short_name(value):
     """Takes a long URI and returns just last part
@@ -102,6 +102,17 @@ def graph():
                 └── row["s"]                dict  (keys: "type", "value")
                     └── row["s"]["value"]   a plain string ← the actual data
     '''
+
+
+    var_names = data['head']['vars']
+
+    if len(var_names) < 3:
+        return jsonify({'error': 'need at least 3 columns'}), 400 #build a JSON reponse, holding error message instead of nodes/edges
+
+    subject_var = var_names[0]
+    predicate_var = var_names[1]
+    object_var = var_names[2]
+
     bindings = data["results"]["bindings"]
 
     nodes = []
@@ -109,10 +120,10 @@ def graph():
 
     # your filter loop from sparql_test.py:
     for row in bindings:
-        s = row["s"]["value"] #check the column named 's' and its value (not type)
-        p = row["p"]["value"]
-        o = row["o"]["value"]
-        o_type = row["o"]["type"]
+        s = row[subject_var]["value"] #check the column named 's' and its value (not type)
+        p = row[predicate_var]["value"]
+        o = row[object_var]["value"]
+        o_type = row[object_var]["type"]
 
         relation = short_name(p)
 
