@@ -227,9 +227,21 @@ the original ?s ?p ?o query and a renamed ?gene ?relation ?target  version.
 But still need at least 3 columns, always treat column 1, 2, 3 as subject,
 predicate and target individually.
 
-## Step 7 (In progress, 2026-08-26) -- adding one more relation, hasDadaNode
+## Step 7 (Done, 2026-08-26) -- adding one more relation, hasDadaNode
 2026-08-26: added `hasDataNode` to wanted_relations — confirmed a new 
 hasDataNode edge appears in the graph.
 why add these two?
 because these two were specifically identified as the biological meaningful one
 everything else risks being noise, like drawing coordinates, GPML layout info.
+
+
+2026-08-27: visual polish — bigger nodes with labels below, gray/thinner edges. 
+Tested, confirmed working.
+
+2026-08-28: wanted_relations changed to biological-only relations: ['participants', 'source', 'target'] 
+(removed isPartOf, hasDataNode — confirmed structural via vocabulary lookup). 
+Verified with Chalcone Isomerase reaction — shows real participants/target edges.
+
+2026-08-28: fixed duplicate edges — added seen_edges set to dedupe on (subject, relation, object). 
+Tested with a UNION query that deliberately doubles every triple; confirmed edges still appear only once.
+

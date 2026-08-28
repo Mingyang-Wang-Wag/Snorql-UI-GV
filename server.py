@@ -11,7 +11,7 @@ app = Flask(__name__)            # create the server object
 CORS(app) #all answer will carry a certified marker to pass now
 
 endpoint = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
-wanted_relations = ['isPartOf', 'hasDataNode'] #the only relation kept
+wanted_relations = ['participants', 'source', 'target'] #only biologcial relation is kept
 
 def short_name(value):
     """Takes a long URI and returns just last part
@@ -117,6 +117,7 @@ def graph():
 
     nodes = []
     edges = []
+    seen_edges = set() #avoid duplicate edges
 
     # your filter loop from sparql_test.py:
     for row in bindings:
@@ -129,10 +130,24 @@ def graph():
 
         if (o_type == "uri" and relation in wanted_relations
                 and "/Comment/" not in s
-                and "/Comment/" not in o):
-            nodes.append(s)
+                and "/Comment/" not in o): #must all be true
+            '''
+            o_type == "uri" — the object is a link to another entity, not plain text
+            relation in wanted_relations — the predicate is one of the approved biological relations (participants/source/target)
+            "/Comment/" not in s — the subject's URI text doesn't contain /Comment/
+            "/Comment/" not in o — same check on the object
+            
+            Comment is a text note attached to a pathway element (like a footnote), not a biological entity. 
+            Comment nodes have URIs containing /Comment/ in the path. 
+            '''
+            nodes.append(s) #add as a node
             nodes.append(o)
-            edges.append({"source": s, "target": o, "label": relation})
+
+            edges_key = (s, relation, o) #store the node - edge -node as a triple in tuple
+
+            if edges_key not in seen_edges: #each triple only store once, only by then append the new edge
+                seen_edges.add(edges_key)
+                edges.append({"source": s, "target": o, "label": relation})
 
     # your dedup:
     nodes = list(dict.fromkeys(nodes))
