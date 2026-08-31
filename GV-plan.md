@@ -245,3 +245,25 @@ Verified with Chalcone Isomerase reaction — shows real participants/target edg
 2026-08-28: fixed duplicate edges — added seen_edges set to dedupe on (subject, relation, object). 
 Tested with a UNION query that deliberately doubles every triple; confirmed edges still appear only once.
 
+2026-08-31: get_label(uri) function ask database same question for every node, which takes much time when we have lots of nodes.
+What the fix does: the first time we ask about some URI, we write down the answer. 
+The next time that exact same URI comes up — anywhere, anytime — we just read what we already wrote down, instantly, instead of asking the database again.
+Done
+
+2026-08-31:
+get_label(uri):
+response = requests.get(endpoint, params={...})
+data = response.json()
+
+If this request fails for any reason — timeout, connection error, 
+or the server sending back something that isn't valid JSON — Python raises 
+an exception here. Since nothing catches it, that exception travels all the 
+way up and crashes the entire /graph request with a 500 error.
+
+fix: wrap this request in a try/except
+Tested by temporarily pointing endpoint at a broken address; 
+confirmed graceful fallback labels instead of a crash.
+
+2026-08-31: verified /Comment/ filter is currently dead code (zero triples with 
+participants/source/target touch a Comment node) — kept intentionally as a 
+defensive safety net for future relation changes.

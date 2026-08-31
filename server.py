@@ -12,6 +12,8 @@ CORS(app) #all answer will carry a certified marker to pass now
 
 endpoint = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
 wanted_relations = ['participants', 'source', 'target'] #only biologcial relation is kept
+memory = {} #remember the label
+
 
 def short_name(value):
     """Takes a long URI and returns just last part
@@ -39,7 +41,11 @@ def get_label(uri):
         label was found.
     """
 
-    #the below query mean: try to find a gpml#name or gpml#textbael in the URI
+    if uri in memory:
+        #print("CACHED:", uri) #Testing: it should be printed after query and second time you open the graph visualization.
+        return memory[uri] #if uri is already stored, just show it.
+
+    #the below query mean: try to find a gpml#name or gpml#textbael in the URI, e.g. a sugar
     label_query = f"""
     SELECT ?label
     WHERE {{
@@ -64,22 +70,33 @@ def get_label(uri):
     LIMIT 1
     """
 
-    response = requests.get(
-        endpoint,
-        params={
-            "query": label_query,
-            "format": "application/sparql-results+json"
-        }
-    )
+    try:
+        response = requests.get(
+            endpoint,
+            params={
+                "query": label_query,
+                "format": "application/sparql-results+json"
+            }
+        ) #send the query
+    except Exception as e:
+        print(e)
+        return short_name(uri) #the fallback choice of this function
+
+    #print("LOOKED UP:", uri) #testing: after query, first time click graph visualization
 
     data = response.json() #turn the output into a dict
 
     results = data["results"]["bindings"]
 
     if len(results) > 0:
-        return results[0]["label"]["value"]
+        label = results[0]["label"]["value"]
+        memory[uri] = label
+        return label
+    else: #if nothing come back, means no gpml#name or gpml#textlabel for this URI, return the last part of the URI, something is better than nothing.
+        last_part_uri = short_name(uri)
+        memory[uri] = last_part_uri
+        return last_part_uri
 
-    return short_name(uri)
 
 
 @app.route("/")                  #printing sth, proving the server is alive
@@ -136,6 +153,7 @@ def graph():
             relation in wanted_relations — the predicate is one of the approved biological relations (participants/source/target)
             "/Comment/" not in s — the subject's URI text doesn't contain /Comment/
             "/Comment/" not in o — same check on the object
+            but comment node (/comment/ does not have any participants/source/target, the last two conditions are dead code
             
             Comment is a text note attached to a pathway element (like a footnote), not a biological entity. 
             Comment nodes have URIs containing /Comment/ in the path. 
