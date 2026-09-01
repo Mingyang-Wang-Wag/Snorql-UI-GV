@@ -5,6 +5,15 @@ from flask_cors import CORS #before this line, my page server port 8000 cannot c
 
 ######page server port 8000: python -m http.server 8000
 
+"""Workflow of the graph visualization function
+
+1. You run a query on the main page — results get saved to sessionStorage
+2. You click Graph Visualization — the popup opens and reads those saved results
+3. The popup's fetch(...) sends those results to http://localhost:5000/graph
+4. Flask sees a POST arrive at /graph, and because of the @app.route decorator, runs graph()
+5. graph()'s return value (the JSON with nodes/edges) becomes the answer sent back to that fetch call
+6. The popup's JavaScript receives it and draws the graph
+"""
 
 #setup
 app = Flask(__name__)            # create the server object
@@ -29,7 +38,7 @@ def short_name(value):
     else:
         return value
 
-def get_label(uri):
+def get_name(uri):
     """Find the human-readable name for a URI.
 
     Parameters:
@@ -121,7 +130,37 @@ def graph():
     '''
 
 
-    var_names = data['head']['vars']
+    var_names = data['head']['vars'] #gene, geneProteinInteraction, protein, proteinlabel etc.
+
+    entity_ls = []
+    label_dict = {}
+
+    for name in var_names:
+        if name.endswith('Label'):
+            try:
+                label_dict[entity_ls[-1]] = name
+            except IndexError:
+                print('missing the first valid column name')
+        else:
+            entity_ls.append(name)
+
+
+    nodes = [] #['gene':{"id": value, "label": <label>, "type": type}, 'protein':{xxxx}]
+    edges = []
+    seen_nodes = set() #avoid duplicate
+    seen_edges = set()
+
+    for row in data["results"]["bindings"]:
+        for entity in entity_ls:
+            if entity.endswith('Interaction'):
+                edge_value_uri = row[entity]['value']
+                edge_name = get_name(edge_value_uri)
+                if edge_name not in seen_edges:
+                    seen_edges.add(edge_name)
+                    edges.append({'name':edge_name, 'label':12})
+            else:
+                node_name = row[entity]['value']
+
 
     if len(var_names) < 3:
         return jsonify({'error': 'need at least 3 columns'}), 400 #build a JSON reponse, holding error message instead of nodes/edges
@@ -132,8 +171,7 @@ def graph():
 
     bindings = data["results"]["bindings"]
 
-    nodes = []
-    edges = []
+
     seen_edges = set() #avoid duplicate edges
 
     # your filter loop from sparql_test.py:
@@ -173,7 +211,7 @@ def graph():
     # your node list with labels:
     node_list = []
     for node in nodes:
-        node_list.append({"id": node, "label": get_label(node)})
+        node_list.append({"id": node, "label": get_name(node)})
 
     return jsonify({"nodes": node_list, "edges": edges})
 

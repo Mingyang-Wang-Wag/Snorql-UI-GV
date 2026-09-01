@@ -267,3 +267,20 @@ confirmed graceful fallback labels instead of a crash.
 2026-08-31: verified /Comment/ filter is currently dead code (zero triples with 
 participants/source/target touch a Comment node) — kept intentionally as a 
 defensive safety net for future relation changes.
+
+2026-01-09: Schema of plantmetwiki show a chain of node connected by edges, 
+our current parser does not suppprt to show such pattern. We need to redesign 
+the parser. 
+Right now graph() only understands ONE shape of query — exactly 3 columns, 
+where column 2's value must be a relation name from a fixed list (isPartOf, 
+participants, etc.). Any query shaped differently — like your raffinose one 
+with 8 columns — gets rejected/ignored, even though it's a perfectly valid, 
+meaningful query.
+Later on, Double-click-to-expand is that same mechanism again, but triggered 
+interactively instead of written into a query upfront: using your example — 
+user runs a simple gene → protein query, sees that one-hop graph. Double-clicks 
+protein. That click tells the server: "find what's connected to this specific 
+node" — the server auto-builds a small query centered on that protein's URI 
+(using participants/source/target, same as always), gets back the next hop (the 
+reaction, maybe other genes), and merges those new nodes into the existing graph 
+instead of replacing it.
