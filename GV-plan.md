@@ -284,3 +284,6 @@ node" — the server auto-builds a small query centered on that protein's URI
 (using participants/source/target, same as always), gets back the next hop (the 
 reaction, maybe other genes), and merges those new nodes into the existing graph 
 instead of replacing it.
+
+2026-09-01: parser redesigned for multi-hop chain queries, tested working 
+(raffinose example).

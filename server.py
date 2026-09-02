@@ -151,68 +151,29 @@ def graph():
     seen_edges = set()
 
     for row in data["results"]["bindings"]:
+        prev_id = None
         for entity in entity_ls:
-            if entity.endswith('Interaction'):
-                edge_value_uri = row[entity]['value']
-                edge_name = get_name(edge_value_uri)
-                if edge_name not in seen_edges:
-                    seen_edges.add(edge_name)
-                    edges.append({'name':edge_name, 'label':12})
+            entity_value_uri = row[entity]['value']
+            if entity in label_dict and label_dict[entity] in row:
+                entity_id = row[label_dict[entity]]['value']
             else:
-                node_name = row[entity]['value']
+                entity_id = get_name(entity_value_uri)
 
+            if entity_value_uri not in seen_nodes:
+                seen_nodes.add(entity_value_uri)
+                nodes.append({'id': entity_value_uri, 'label':entity_id}) #uri is unique
 
-    if len(var_names) < 3:
-        return jsonify({'error': 'need at least 3 columns'}), 400 #build a JSON reponse, holding error message instead of nodes/edges
+            if prev_id is not None: #there is a entity before this loop
+                edge_key = (prev_id, entity_value_uri) #last entity and this entity
+                if edge_key not in seen_edges:
+                    seen_edges.add(edge_key)
+                    edges.append({'source': prev_id, 'target': entity_value_uri, 'label':''})
 
-    subject_var = var_names[0]
-    predicate_var = var_names[1]
-    object_var = var_names[2]
+            prev_id = entity_value_uri
 
-    bindings = data["results"]["bindings"]
+    print("NODES:", nodes)
+    print("EDGES:", edges)
 
-
-    seen_edges = set() #avoid duplicate edges
-
-    # your filter loop from sparql_test.py:
-    for row in bindings:
-        s = row[subject_var]["value"] #check the column named 's' and its value (not type)
-        p = row[predicate_var]["value"]
-        o = row[object_var]["value"]
-        o_type = row[object_var]["type"]
-
-        relation = short_name(p)
-
-        if (o_type == "uri" and relation in wanted_relations
-                and "/Comment/" not in s
-                and "/Comment/" not in o): #must all be true
-            '''
-            o_type == "uri" — the object is a link to another entity, not plain text
-            relation in wanted_relations — the predicate is one of the approved biological relations (participants/source/target)
-            "/Comment/" not in s — the subject's URI text doesn't contain /Comment/
-            "/Comment/" not in o — same check on the object
-            but comment node (/comment/ does not have any participants/source/target, the last two conditions are dead code
-            
-            Comment is a text note attached to a pathway element (like a footnote), not a biological entity. 
-            Comment nodes have URIs containing /Comment/ in the path. 
-            '''
-            nodes.append(s) #add as a node
-            nodes.append(o)
-
-            edges_key = (s, relation, o) #store the node - edge -node as a triple in tuple
-
-            if edges_key not in seen_edges: #each triple only store once, only by then append the new edge
-                seen_edges.add(edges_key)
-                edges.append({"source": s, "target": o, "label": relation})
-
-    # your dedup:
-    nodes = list(dict.fromkeys(nodes))
-
-    # your node list with labels:
-    node_list = []
-    for node in nodes:
-        node_list.append({"id": node, "label": get_name(node)})
-
-    return jsonify({"nodes": node_list, "edges": edges})
+    return jsonify({"nodes": nodes, "edges": edges})
 
 app.run(port=5000)               # start the server on port 5000 and wait
