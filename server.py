@@ -157,7 +157,7 @@ def graph():
             if entity in label_dict and label_dict[entity] in row:
                 entity_id = row[label_dict[entity]]['value']
             else:
-                entity_id = get_name(entity_value_uri)
+                entity_id = get_name(entity_value_uri) #we cannot get the label for raffinose like this that's why we need above codes
 
             if entity_value_uri not in seen_nodes:
                 seen_nodes.add(entity_value_uri)
