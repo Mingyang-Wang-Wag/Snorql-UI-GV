@@ -93,7 +93,7 @@
 
         for (var i = 0; i < answer.nodes.length; i++) {
         var node = answer.nodes[i];
-        elements.push({ data: { id: node.id, label: node.label } });
+        elements.push({ data: { id: node.id, label: node.label, type: node.type } });
         }
 
         for (var j = 0; j < answer.edges.length; j++) {
@@ -106,6 +106,10 @@
         elements: elements,
         style: [
             { selector: "node", style: { "label": "data(label)", "background-color": "#59a14f", "width": 30, "height": 30, "font-size": 12, "text-valign": "bottom", "text-halign": "center" } },
+            { selector: 'node[type = "GeneProduct"]', style: { "background-color": "#4e79a7", "shape": "ellipse" } },
+            { selector: 'node[type = "Protein"]', style: { "background-color": "#59a14f", "shape": "rectangle" } },
+            { selector: 'node[type = "Metabolite"]', style: { "background-color": "#f28e2b", "shape": "diamond" } },
+            { selector: 'node[type = "Conversion"]', style: { "background-color": "#999999", "shape": "triangle" } },
             { selector: "edge", style: { "label": "data(label)", "font-size": 10, "target-arrow-shape": "triangle", "curve-style": "bezier", "line-color": "#999", "target-arrow-color": "#999", "width": 2 } }
         ],
         layout: { name: "cose" }

@@ -22,7 +22,7 @@ CORS(app) #all answer will carry a certified marker to pass now
 endpoint = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
 wanted_relations = ['participants', 'source', 'target'] #only biologcial relation is kept
 memory = {} #remember the label
-
+type_memory = {}
 
 def short_name(value):
     """Takes a long URI and returns just last part
@@ -106,6 +106,54 @@ def get_name(uri):
         memory[uri] = last_part_uri
         return last_part_uri
 
+def get_entity_type(uri):
+    """Ask the database what type this URI is (via rdf:type / 'a').
+
+    Parameters:
+        uri: The URI of one node, as a string.
+
+    Returns: type,
+        The short type name (e.g. "Protein", "GeneProduct"), or
+        "other" if the database has no type for this URI.
+    """
+
+    if uri in type_memory:
+        return type_memory[uri]
+
+    type_query = f"""
+    SELECT ?type
+    WHERE {{
+        <{uri}> a ?type .
+    }}
+    """
+
+    try:
+        response = requests.get(
+            endpoint,
+            params={
+                "query": type_query,
+                "format": "application/sparql-results+json"
+            }
+        )
+    except Exception as e:
+        print(e)
+        return "other"
+
+    data = response.json()
+    results = data["results"]["bindings"]
+
+    if len(results) > 0:
+        wp_types = [r["type"]["value"] for r in results if
+                    'wp#' in r["type"]["value"]]
+        if wp_types:
+            entity_type = short_name(wp_types[0])
+        else:
+            entity_type = short_name(results[0]["type"]["value"])
+    else:
+        entity_type = "other"
+
+    type_memory[uri] = entity_type
+    return entity_type
 
 
 @app.route("/")                  #printing sth, proving the server is alive
@@ -161,7 +209,7 @@ def graph():
 
             if entity_value_uri not in seen_nodes:
                 seen_nodes.add(entity_value_uri)
-                nodes.append({'id': entity_value_uri, 'label':entity_id}) #uri is unique
+                nodes.append({'id': entity_value_uri, 'label':entity_id, 'type': get_entity_type(entity_value_uri)}) #uri is unique
 
             if prev_id is not None: #there is a entity before this loop
                 edge_key = (prev_id, entity_value_uri) #last entity and this entity

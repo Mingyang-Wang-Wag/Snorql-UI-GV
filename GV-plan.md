@@ -215,8 +215,6 @@ again once the new data is in. Coming work is Python-centric:
 
 ---
 
-## Step 6 (Done, 2026-08-26) — Handle any query, not just ?s ?p ?o
-
 2026-08-25: make `graph()` in `server.py` work with any SPARQL query
 that returns at least 3 columns — not just ones literally named `s`, `p`, `o`.
 
@@ -227,7 +225,6 @@ the original ?s ?p ?o query and a renamed ?gene ?relation ?target  version.
 But still need at least 3 columns, always treat column 1, 2, 3 as subject,
 predicate and target individually.
 
-## Step 7 (Done, 2026-08-26) -- adding one more relation, hasDadaNode
 2026-08-26: added `hasDataNode` to wanted_relations — confirmed a new 
 hasDataNode edge appears in the graph.
 why add these two?
@@ -287,3 +284,12 @@ instead of replacing it.
 
 2026-09-01: parser redesigned for multi-hop chain queries, tested working 
 (raffinose example).
+
+2026-09-03: for different type of nodes and edges (i.e. gene, protein, using different color and shape)
+the edges do not have a name so far, we should name it. 
+
+2026-09-04: collapse the multiple pathway-instance duplicate: the 8 different 
+gene_protein_X_0_0 nodes (or 8 different conversion instances) that represent 
+"the same" biological fact across different pathway diagrams, into one.
+Only show one in between of each main biological nodes (i.e. gene, protein, reaction, metabolite)
+
