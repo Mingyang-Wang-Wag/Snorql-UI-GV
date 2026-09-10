@@ -176,6 +176,7 @@ def graph():
                     edges[edge_key] = {'source': prev_id, 'target': entity_uri, 'label':''}
 
             prev_id = entity_uri
+
     #JSON dose not accept tuple as key, only string
     #drop out the key, the uri has a copy in the values
     node_list = list(nodes.values())

@@ -299,3 +299,7 @@ gene_protein_X_0_0 nodes (or 8 different conversion instances) that represent
 "the same" biological fact across different pathway diagrams, into one.
 Only show one in between of each main biological nodes (i.e. gene, protein, reaction, metabolite)
 
+2026-09-10:2026-09-10: get_name now checks rdfs:label (was gpml#name/textlabel); 
+get_entity_type query uses DISTINCT to avoid duplicate types; refactored 
+nodes/edges to dicts (keyed by uri / by (source,target)) for cleaner dedup, 
+converted back to lists before jsonify. 
