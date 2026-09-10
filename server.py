@@ -1,21 +1,7 @@
-#imports
-from flask import Flask, request, jsonify         # get the needed class from the flask library
-import requests #??
+from flask import Flask, request, jsonify
+import requests #send a request to web server, and get an answer back
 from flask_cors import CORS #before this line, my page server port 8000 cannot connect my Flask server port 5000, CORS is the permission
 
-######page server port 8000: python -m http.server 8000
-
-"""Workflow of the graph visualization function
-
-1. You run a query on the main page — results get saved to sessionStorage
-2. You click Graph Visualization — the popup opens and reads those saved results
-3. The popup's fetch(...) sends those results to http://localhost:5000/graph
-4. Flask sees a POST arrive at /graph, and because of the @app.route decorator, runs graph()
-5. graph()'s return value (the JSON with nodes/edges) becomes the answer sent back to that fetch call
-6. The popup's JavaScript receives it and draws the graph
-"""
-
-#setup
 app = Flask(__name__)            # create the server object
 CORS(app) #all answer will carry a certified marker to pass now
 
@@ -29,13 +15,13 @@ def short_name(value):
 
     return: str, e.g. http://xxx/gpml#isPartOf → isPartOf
     """
-    if "#" in value:
-        return value.rsplit("#", 1)[1] #split from #, xxxx#xxxx, keep the last words
+    if "#" in value: #e.g. http://vocabularies.wikipathways.org/wp#Conversion
+        return value.rsplit("#", 1)[1]
 
-    elif "/" in value:
-        return value.rstrip("/").rsplit("/", 1)[1] #remove the last /, right split at / once
+    elif "/" in value: #https://identifiers.org/Phytozome/AT5G52810.1
+        return value.rstrip("/").rsplit("/", 1)[1]
 
-    else:
+    else: #RDF triples can also carry literal values, e.g. 1-piperideine-2-carboxylate reductase
         return value
 
 def get_name(uri):
@@ -54,27 +40,13 @@ def get_name(uri):
         #print("CACHED:", uri) #Testing: it should be printed after query and second time you open the graph visualization.
         return memory[uri] #if uri is already stored, just show it.
 
-    #the below query mean: try to find a gpml#name or gpml#textbael in the URI, e.g. a sugar
+    #the below query mean: try to find a gpml#name or gpml#textlabel in the URI, e.g. a sugar
     label_query = f"""
     SELECT ?label
     WHERE {{
-        GRAPH <http://rdf-plantmetwiki.bioinformatics.nl/graph/pathways> {{
-
-            {{
-                <{uri}>
-                <http://vocabularies.wikipathways.org/gpml#name>
-                ?label .
+    GRAPH <http://rdf-plantmetwiki.bioinformatics.nl/graph/pathways> {{
+        <{uri}> <http://www.w3.org/2000/01/rdf-schema#label> ?label .
             }}
-
-            UNION
-
-            {{
-                <{uri}>
-                <http://vocabularies.wikipathways.org/gpml#textlabel>
-                ?label .
-            }}
-
-        }}
     }}
     LIMIT 1
     """
@@ -86,12 +58,10 @@ def get_name(uri):
                 "query": label_query,
                 "format": "application/sparql-results+json"
             }
-        ) #send the query
+        )
     except Exception as e:
         print(e)
         return short_name(uri) #the fallback choice of this function
-
-    #print("LOOKED UP:", uri) #testing: after query, first time click graph visualization
 
     data = response.json() #turn the output into a dict
 
@@ -101,9 +71,10 @@ def get_name(uri):
         label = results[0]["label"]["value"]
         memory[uri] = label
         return label
-    else: #if nothing come back, means no gpml#name or gpml#textlabel for this URI, return the last part of the URI, something is better than nothing.
+    else: #at least return something
         last_part_uri = short_name(uri)
         memory[uri] = last_part_uri
+        #print(last_part_uri)
         return last_part_uri
 
 def get_entity_type(uri):
@@ -120,8 +91,9 @@ def get_entity_type(uri):
     if uri in type_memory:
         return type_memory[uri]
 
+    #what is this URI's `rdf:type`?
     type_query = f"""
-    SELECT ?type
+    SELECT DISTINCT ?type
     WHERE {{
         <{uri}> a ?type .
     }}
@@ -143,11 +115,11 @@ def get_entity_type(uri):
     results = data["results"]["bindings"]
 
     if len(results) > 0:
-        wp_types = [r["type"]["value"] for r in results if
-                    'wp#' in r["type"]["value"]]
+        wp_types = [result["type"]["value"] for result in results if
+                    'wp#' in result["type"]["value"]]
         if wp_types:
             entity_type = short_name(wp_types[0])
-        else:
+        else: #what if we do not find our preference wp#? like gpml#DataNode
             entity_type = short_name(results[0]["type"]["value"])
     else:
         entity_type = "other"
@@ -162,21 +134,11 @@ def home():
 
 @app.route("/graph", methods=["POST"]) #when the server receive a POST, run the function below
 def graph():
-    """Turn SPARQL query results (sent as JSON in the POST body) into graph
-    nodes and edges.
+    """Turn SPARQL query results (JSON ) into graph nodes and edges.
 
     return: JSON {"nodes": [...], "edges": [...]}
     """
     data = request.get_json()
-    '''
-    data                                    dict  (keys: "head", "results")
-    └── data["results"]                     dict  (key: "bindings")
-        └── data["results"]["bindings"]     LIST  ← not a dict! one item per row
-            └── bindings[0]  (= "row")      dict  (keys: "s", "p", "o")
-                └── row["s"]                dict  (keys: "type", "value")
-                    └── row["s"]["value"]   a plain string ← the actual data
-    '''
-
 
     var_names = data['head']['vars'] #gene, geneProteinInteraction, protein, proteinlabel etc.
 
@@ -192,36 +154,32 @@ def graph():
         else:
             entity_ls.append(name)
 
-
-    nodes = [] #['gene':{"id": value, "label": <label>, "type": type}, 'protein':{xxxx}]
-    edges = []
-    seen_nodes = set() #avoid duplicate
-    seen_edges = set()
+    nodes = {}
+    edges = {}
 
     for row in data["results"]["bindings"]:
         prev_id = None
         for entity in entity_ls:
-            entity_value_uri = row[entity]['value']
+            entity_uri = row[entity]['value']
             if entity in label_dict and label_dict[entity] in row:
                 entity_id = row[label_dict[entity]]['value']
             else:
-                entity_id = get_name(entity_value_uri) #we cannot get the label for raffinose like this that's why we need above codes
+                entity_id = get_name(entity_uri) #we cannot get the label for raffinose like this that's why we need above codes
+                                                 #10-09 it is solved, by changing the query in get_name() for searching for rdf#label
 
-            if entity_value_uri not in seen_nodes:
-                seen_nodes.add(entity_value_uri)
-                nodes.append({'id': entity_value_uri, 'label':entity_id, 'type': get_entity_type(entity_value_uri)}) #uri is unique
+            if entity_uri not in nodes:
+                nodes[entity_uri] = {'id': entity_uri, 'label':entity_id, 'type': get_entity_type(entity_uri)} #uri is unique
 
-            if prev_id is not None: #there is a entity before this loop
-                edge_key = (prev_id, entity_value_uri) #last entity and this entity
-                if edge_key not in seen_edges:
-                    seen_edges.add(edge_key)
-                    edges.append({'source': prev_id, 'target': entity_value_uri, 'label':''})
+            if prev_id: #there is a entity before this loop
+                edge_key = (prev_id, entity_uri) #last entity and this entity
+                if edge_key not in edges:
+                    edges[edge_key] = {'source': prev_id, 'target': entity_uri, 'label':''}
 
-            prev_id = entity_value_uri
-
-    print("NODES:", nodes)
-    print("EDGES:", edges)
-
-    return jsonify({"nodes": nodes, "edges": edges})
+            prev_id = entity_uri
+    #JSON dose not accept tuple as key, only string
+    #drop out the key, the uri has a copy in the values
+    node_list = list(nodes.values())
+    edge_list = list(edges.values())
+    return jsonify({"nodes": node_list, "edges": edge_list})
 
 app.run(port=5000)               # start the server on port 5000 and wait

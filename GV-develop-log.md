@@ -285,10 +285,16 @@ instead of replacing it.
 2026-09-01: parser redesigned for multi-hop chain queries, tested working 
 (raffinose example).
 
-2026-09-03: for different type of nodes and edges (i.e. gene, protein, using different color and shape)
-the edges do not have a name so far, we should name it. 
+2026-09-04: added node type detection (get_entity_type, queries rdf:type directly, prefers wp: namespace over gpml:) 
+and wired into Cytoscape styling - genes/proteins/metabolites/reactions now show different colors/shapes. Tested working.
 
-2026-09-04: collapse the multiple pathway-instance duplicate: the 8 different 
+
+now the relation between node is just participant, source, target, i will rename these relatin based on the type of nodes
+gene-protein:encode
+protein-reaction: catalyzes
+reaction-metabolite: involves
+
+collapse the multiple pathway-instance duplicate: the 8 different 
 gene_protein_X_0_0 nodes (or 8 different conversion instances) that represent 
 "the same" biological fact across different pathway diagrams, into one.
 Only show one in between of each main biological nodes (i.e. gene, protein, reaction, metabolite)
