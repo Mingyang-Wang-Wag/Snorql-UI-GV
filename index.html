@@ -25,8 +25,8 @@
 	<script src="assets/codemirror/addon/selection/active-line.js"></script>
 	<script src="assets/codemirror/addon/edit/matchbrackets.js"></script>
 	<script src="assets/codemirror/addon/display/fullscreen.js"></script>
-	<script src="assets/codemirror/sparql.js"></script>		
-	
+	<script src="assets/codemirror/sparql.js"></script>
+
 	<script src="assets/js/bootstrap-treeview.min.js"></script>
     <script src="assets/js/sparql.js"></script>
     <script src="assets/js/namespaces.js"></script>
@@ -35,7 +35,7 @@
   </head>
 
   <body onload="start()">
- 
+
 	<nav class="navbar navbar-default">
       <!-- <div class="container-fluid"> -->
       <div class="container">
@@ -82,17 +82,32 @@
 				</div>
 				
 				<div class="row">
-					<div class="col-md-12 buttons-holder">		
+                    <div class="col-md-12">
+                        <div class="act-on-the-SPARQL">
 						<input id="query-button" type="button" class="btn btn-success" value="Query" />
 						<input id="reset-button" type="button" class="btn btn-danger" value="Reset" />
-						<input id="export-csv" type="button" class="btn btn-warning" value="Export CSV" />
+						<input id="graph-viz-button" type="button" class="btn btn-info" value="Graph Visualization" /> <!-- new graph visualization button -->
+
+					</div>
+
+                    <div class="text-to-SPARQL">
+                        <input id="english-question-input" type="text" class="english-question form-control" placeholder="Input your English question here" />
+                        <input id="ask-button" type="button" class="btn btn-success" value="Submit">
+                    </div>
+
+                    <div class="output-utility-actions">
+                        <input id="export-csv" type="button" class="btn btn-warning" value="Export CSV" />
 						<input id="export-json" type="button" class="btn btn-primary" value="Export JSON" />
 						<input id="export-xml" type="button" class="btn btn-info" value="Export XML" />
 						<input id="generate-permalink" type="button" class="btn btn-secondary" value="Get Permalink" />
 						<input id="enter-fullscreen" type="button" class="btn btn-dark" value="Fullscreen Mode" />
 						<input id="show-prefixes" type="button" class="btn btn-light" value="Show Prefixes" />
-						<input id="graph-viz-button" type="button" class="btn btn-info" value="Graph Visualization" /> <!-- new graph visualization button -->
-					</div>
+                    </div>
+                    </div>
+
+
+
+
 				</div>
 				
 			</div>

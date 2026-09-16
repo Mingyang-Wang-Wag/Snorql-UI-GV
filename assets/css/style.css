@@ -201,6 +201,25 @@ footer p{
     margin: 3px;
 }
 
+.act-on-the-SPARQL,
+.text-to-SPARQL,
+.output-utility-actions{
+    display: block;
+    padding: 8px;
+    margin: 5px;
+} /* draw black outline around all three button groups*/
+
+.act-on-the-SPARQL .btn,
+.text-to-SPARQL .btn,
+.output-utility-actions .btn{
+    margin: 3px;
+}
+
+.english-question{
+    display: inline-block;
+    width: 400px;
+    margin-right: 5px;
+}
 
 @media (max-width: 600px) {
   .navbar .container {

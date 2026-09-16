@@ -128,6 +128,18 @@ jQuery(document).ready(function() { // the index.html (webpage builder) build pa
                 "width=1000,height=700,resizable=yes,scrollbars=yes"); //setting of the popup window
         });
 
+        jQuery("#ask-button").on("click", function(){ //search the page for the element with id ask-button
+            var en_question = jQuery("#english-question-input").val(); //read whatever text is currently in the input box
+
+            fetch("http://localhost:5000/translate", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(en_question)
+        })
+        .then(function (response) { return response.text(); }) //server currently returns plain text, not JSON
+        .then(function (text) {
+            console.log(text);   //visible in the browser's dev console
+            alert(text);         //placeholder so you can see it working without opening dev tools
+        });
+        });
+
         jQuery("#export-csv").on("click",function(){
             var query = editor.getDoc().getValue();
             var queryText = getPrefixes() + query;

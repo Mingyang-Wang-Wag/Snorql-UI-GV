@@ -183,4 +183,5 @@ def graph():
     edge_list = list(edges.values())
     return jsonify({"nodes": node_list, "edges": edge_list})
 
-app.run(port=5000)               # start the server on port 5000 and wait
+if __name__ == '__main__':
+    app.run(port=5000)               # start the server on port 5000 and wait
