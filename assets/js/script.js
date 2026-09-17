@@ -133,10 +133,10 @@ jQuery(document).ready(function() { // the index.html (webpage builder) build pa
 
             fetch("http://localhost:5000/translate", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(en_question)
         })
-        .then(function (response) { return response.text(); }) //server currently returns plain text, not JSON
-        .then(function (text) {
-            console.log(text);   //visible in the browser's dev console
-            alert(text);         //placeholder so you can see it working without opening dev tools
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            console.log(data);   //visible in the browser's dev console
+            editor.getDoc().setValue(data.query); // fill the generated query into the textbox
         });
         });
 
