@@ -5,7 +5,8 @@ from flask_cors import CORS #before this line, my page server port 8000 cannot c
 app = Flask(__name__)            # create the server object
 CORS(app) #all answer will carry a certified marker to pass now
 
-endpoint = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
+endpoint_pmw = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
+endpoint_local = "http://localhost:8890/sparql"
 wanted_relations = ['participants', 'source', 'target'] #only biologcial relation is kept
 memory = {} #remember the label
 type_memory = {}
@@ -53,7 +54,7 @@ def get_name(uri):
 
     try:
         response = requests.get(
-            endpoint,
+            endpoint_local,
             params={
                 "query": label_query,
                 "format": "application/sparql-results+json"
@@ -101,7 +102,7 @@ def get_entity_type(uri):
 
     try:
         response = requests.get(
-            endpoint,
+            endpoint_local,
             params={
                 "query": type_query,
                 "format": "application/sparql-results+json"

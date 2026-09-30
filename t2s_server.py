@@ -17,9 +17,9 @@ import time
 #prompt import
 from prompt import system_prompt, schema_prompt, query_prompt_protein, query_prompt_gene
 
-
-endpoint = "https://plantmetwiki.bioinformatics.nl/sparql"
-
+#setting
+endpoint_pmw = "https://plantmetwiki.bioinformatics.nl/sparql"
+endpoint_local = "http://localhost:8890/sparql"
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key = api_key)
