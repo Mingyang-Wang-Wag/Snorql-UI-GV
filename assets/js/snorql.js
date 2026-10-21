@@ -1,6 +1,6 @@
 //the database talker
 
-var _endpoint = "https://plantmetwiki.bioinformatics.nl/sparql"; // connect to plantmetwiki
+var _endpoint = "http://localhost:8890/sparql";
 var _examples_repo = "https://github.com/pathway-lod/SPARQLQueries"; //provide the example queries, they lives in github repository
 var _defaultGraph = "";
 var _namespaces = snorql_namespacePrefixes;

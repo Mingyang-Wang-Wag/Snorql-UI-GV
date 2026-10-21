@@ -26,6 +26,13 @@
 
 	<p class="text-muted">Test graph:</p>
 	<div id="graph-container" style="height: 500px; border: 1px solid #ddd;"></div> <!-- the drawing area -->
+    <dialog id="evidence-dialog" style="width: 600px; max-width: 90vw;">
+        <h4 id="evidence-title">Phenotype evidence</h4>
+        <div id="evidence-content" style="white-space: pre-wrap; max-height: 60vh; overflow-y: auto;"></div>
+        <button type="button" onclick="document.getElementById('evidence-dialog').close()">
+            Close
+        </button>
+    </dialog>
 
     <p class="text-muted">Answer from the Python server:</p>
     <pre id="server-answer"></pre>
@@ -86,7 +93,22 @@
         } else {
         serverAnswerBox.textContent = "(no results to send)";
         }
+        async function loadEvidence(uri) {
+            var box = document.getElementById("evidence-content");
+            box.textContent = "Loading...";
 
+            try {
+                var response = await fetch(
+                    "http://localhost:5000/evidence?uri=" + encodeURIComponent(uri)
+                );
+                var data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Request failed");
+
+                box.textContent = JSON.stringify(data.alleles, null, 2);
+            } catch (error) {
+                box.textContent = "Could not load phenotype details: " + error.message;
+            }
+        }
         // 4. Draw the nodes and edges with Cytoscape.
         function drawGraph(answer) {
         var elements = [];
@@ -110,9 +132,19 @@
             { selector: 'node[type = "Protein"]', style: { "background-color": "#59a14f", "shape": "rectangle" } },
             { selector: 'node[type = "Metabolite"]', style: { "background-color": "#f28e2b", "shape": "diamond" } },
             { selector: 'node[type = "Conversion"]', style: { "background-color": "#999999", "shape": "triangle" } },
+            { selector: 'node[type = "Evidence"]', style: { "background-color": "#e15759", "shape": "round-rectangle" } },
+            { selector: 'node[type = "TO"]', style: { "background-color": "#b07aa1", "shape": "hexagon" } },
             { selector: "edge", style: { "label": "data(label)", "font-size": 10, "target-arrow-shape": "triangle", "curve-style": "bezier", "line-color": "#999", "target-arrow-color": "#999", "width": 2 } }
         ],
         layout: { name: "cose" }
+        });
+            cy.on("cxttap", 'node[type = "Evidence"]', function (event) {
+            var node = event.target;
+
+            document.getElementById("evidence-title").textContent = node.data("label");
+            loadEvidence(node.id());
+
+            document.getElementById("evidence-dialog").showModal();
         });
         }
 	</script>
