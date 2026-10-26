@@ -9,6 +9,7 @@ CORS(app) #all answer will carry a certified marker to pass now
 endpoint_pmw = "https://plantmetwiki.bioinformatics.nl/sparql" #address, used whenever this server needs to ask it sth.
 endpoint_local = "http://localhost:8890/sparql"
 wanted_relations = ['participants', 'source', 'target'] #only biologcial relation is kept
+
 memory = {} #remember the label
 type_memory = {}
 
@@ -88,9 +89,20 @@ def get_entity_type(uri):
         The short type name (e.g. "Protein", "GeneProduct"), or
         "other" if the database has no type for this URI.
     """
+    entity_type = "other"  # other is the default value for entity_type
 
     if uri in type_memory:
         return type_memory[uri]
+    # for TO and Evidence only, because the URI is defined by us, the prefix are unique
+    elif uri.startswith("http://purl.obolibrary.org/obo/TO_"):
+        entity_type = 'TO'
+        type_memory[uri] = entity_type
+        return entity_type
+
+    elif uri.startswith("urn:pmw-pheno:evidence:"):
+        entity_type = 'Evidence'
+        type_memory[uri] = entity_type
+        return entity_type
 
     #what is this URI's `rdf:type`?
     type_query = f"""
@@ -110,14 +122,11 @@ def get_entity_type(uri):
                 "format": "application/sparql-results+json"
             }
         )
-    except Exception as e:
-        print(e)
+    except Exception as e: #when virtuoso has a problem, python cannot connect to the server
         return "other"
 
     data = response.json()
     results = data["results"]["bindings"]
-
-    entity_type = "other" #other is the default value for entity_type
 
     if len(results) > 0:
         for result in results:
@@ -131,9 +140,95 @@ def get_entity_type(uri):
     type_memory[uri] = entity_type
     return entity_type
 
-@app.route("/")                  #printing sth, proving the server is alive
-def home():
-    return "hello from yang"
+def separate_columns(var_names):
+    """Separate entity columns from their matching Label columns.
+    input: a list of string, for example [gene, geneProteinInteraction, protein, proteinLabel, reaction, reactionLabel ]
+
+    return: a list of entity names, a dict with entity name: entityLabel
+    """
+    entity_ls = []
+    label_dict = {}
+
+    for name in var_names:
+        if name.endswith('Label'):
+            continue
+        else:
+            entity_ls.append(name)
+
+    for name in var_names:
+        if name.endswith('Label'):
+            entity_name = name[:-5]
+            if entity_name in entity_ls:
+                label_dict[entity_name] = name
+
+    return entity_ls, label_dict
+
+def get_interaction(source_uri, target_uri):
+    """Find the interaction node between two entity (if it exists, because some entity only has direct connection)
+    input: two valid URI of entity, str
+
+    return: a list, if it exists, then return a list of str, if nothing, an empty list
+    """
+    interaction_ls = []
+    interaction_query = f"""
+    PREFIX wp: <http://vocabularies.wikipathways.org/wp#>
+
+    SELECT DISTINCT ?interactionType
+    WHERE {{
+    GRAPH <http://rdf-plantmetwiki.bioinformatics.nl/graph/pathways> {{
+        ?interaction
+            wp:source <{source_uri}> ;
+            wp:target <{target_uri}> ;
+            a ?interactionType .
+        }}
+    }}
+    """
+    try:
+        response = requests.get(
+            endpoint_local,
+            params = {
+                "query" : interaction_query,
+                "format": "application/sparql-results+json"
+            }
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print("Interaction query failed:", e)
+        raise
+    data = response.json()
+    interactions = data['results']['bindings']
+
+    if len(interactions) > 0:
+        for interaction in interactions:
+            name = short_name(interaction['interactionType']['value'])
+            interaction_ls.append(name)
+
+    return interaction_ls
+
+
+def make_nodes(rows, entity_ls, label_dict):
+    """Build a dictionary of unique graph nodes."""
+    nodes = {}
+
+    for row in rows:
+        for entity in entity_ls:
+            entity_uri = row[entity]["value"]
+
+            if entity_uri in nodes:
+                continue
+
+            if entity in label_dict and label_dict[entity] in row:
+                entity_label = row[label_dict[entity]]["value"]
+            else:
+                entity_label = get_name(entity_uri)
+
+            nodes[entity_uri] = {
+                "id": entity_uri,
+                "label": entity_label,
+                "type": get_entity_type(entity_uri)
+            }
+
+    return nodes
 
 @app.route("/graph", methods=["POST"]) #when the server receive a POST, run the function below
 def graph():
@@ -143,61 +238,41 @@ def graph():
     """
     data = request.get_json()
 
-    var_names = data['head']['vars'] #gene, geneProteinInteraction, protein, proteinlabel etc.
+    var_names = data['head']['vars']
+    entity_ls, label_dict  = separate_columns(var_names)
 
-    entity_ls = []
-    label_dict = {}
+    nodes = make_nodes(data["results"]["bindings"], entity_ls, label_dict)
 
-    for name in var_names:
-        if name.endswith('Label'):
-            try:
-                label_dict[entity_ls[-1]] = name
-            except IndexError:
-                print('missing the first valid column name')
-        else:
-            entity_ls.append(name)
-
-    nodes = {}
     edges = {}
-
     for row in data["results"]["bindings"]:
-        prev_id = None
+        prev_uri = None
         for entity in entity_ls:
             entity_uri = row[entity]['value']
-            if entity in label_dict and label_dict[entity] in row:
-                entity_id = row[label_dict[entity]]['value']
-            else:
-                entity_id = get_name(entity_uri) #we cannot get the label for raffinose like this that's why we need above codes
-                                                 #10-09 it is solved, by changing the query in get_name() for searching for rdf#label
-
-            if entity_uri not in nodes:
-                if entity == "evidence":
-                    node_type = "Evidence"
-                elif entity == "trait":
-                    node_type = "TO"
-                else:
-                    node_type = get_entity_type(entity_uri)
-
-                nodes[entity_uri] = {
-                    "id": entity_uri,
-                    "label": entity_id,
-                    "type": node_type
-                }
-
-            if entity not in ("evidence", "trait"):
-                if prev_id:
-                    edge_key = (prev_id, entity_uri)
+            if entity not in ("evidence", "trait", "substrate", "product"):
+                if prev_uri:
+                    edge_key = (prev_uri, entity_uri)
                     if edge_key not in edges:
-                        edges[edge_key] = {
-                            "source": prev_id,
-                            "target": entity_uri,
-                            "label": ""
-                        }
+                        interaction_ls = get_interaction(prev_uri, entity_uri)
+                        if interaction_ls:
+                            interaction_label = ""
+                            if 'Catalysis' in interaction_ls: #unique interaction node between protein and reaction
+                                interaction_label = 'Catalysis'
+                            elif 'TranscriptionTranslation' in interaction_ls: #unique interaction node between gene and protein
+                                interaction_label = 'TranscriptionTranslation'
+                            edges[edge_key] = {
+                                "source": prev_uri,
+                                "target": entity_uri,
+                                "label": interaction_label
+                            }
 
-                prev_id = entity_uri
+                prev_uri = entity_uri
+
         for start, end, relation in [
             ("gene", "evidence", "hasEvidence"),
-            ("evidence", "trait", "hasOntologyTerm")
+            ("evidence", "trait", "hasOntologyTerm"),
+            ("reaction", "substrate", "hasSubstrate"),
+            ("reaction", "product", "hasProduct")
+
         ]:
             if start in row and end in row:
                 source = row[start]["value"]
