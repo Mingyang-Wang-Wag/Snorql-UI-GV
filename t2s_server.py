@@ -15,7 +15,7 @@ import re
 import time
 
 #prompt import
-from prompt import system_prompt, schema_prompt, query_prompt_protein, query_prompt_gene
+from prompt import system_prompt, schema_prompt, example_query1, example_query2, example_query3
 
 #setting
 endpoint_pmw = "https://plantmetwiki.bioinformatics.nl/sparql"
@@ -25,57 +25,45 @@ api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key = api_key)
 
 
-
-@app.route('/translate', methods=['POST'])
-def tair_uniprot_parser():
+@app.route('/translate', methods=['POST']) #get /evidence and /graph from GV_server.py, add /translate here.
+def main():
     """
-    Extract the TAIR or the UniProt id in the user's input Enlgish question
-    put it together with prompt and send to GPT-5
+    Sending the user's question to gpt API and capture the response. return the response and some evaluation parameters
 
     """
-
     server_response = request.get_json()
-    question = server_response
+    user_question = server_response
 
-    tair_pattern = r"AT[1-5CM]G\d{5}"
-    uniprot_pattern = r"[OPQ]\d[A-Z0-9]{3}\d" # only for O/P/Q-starting form, not the other UniProt accession shape or the longer 10-character varian
+    start = time.time()
+    gpt_response = client.chat.completions.create(model="gpt-6-astra", messages=[{'role': 'user','content':
+        f'{system_prompt} {schema_prompt} {example_query1} {example_query2} {example_query3}. Generate a SPARQL query given this question {user_question}.'}])
+    end = time.time()
+    elapsed = end - start
 
-    tair_id_ls = re.findall(tair_pattern, question)
-    uniprot_id_ls = re.findall(uniprot_pattern, question)
-    extracted_id_ls = tair_id_ls + uniprot_id_ls
+    print("Prompt tokens:", gpt_response.usage.prompt_tokens)
+    print("Completion tokens:", gpt_response.usage.completion_tokens) #tokens of generated SPARQL query and tokens of inference to generate
+    print("Total tokens:", gpt_response.usage.total_tokens)
+    print("Response time (seconds):", elapsed)
 
-    if len(extracted_id_ls) == 0:
-        return f'no id was found in the: {server_response}'
-    elif len(extracted_id_ls) == 1:
+    usage = gpt_response.usage
+    details = usage.prompt_tokens_details
 
-        start = time.time()
-        gpt_response = client.chat.completions.create(model='gpt-5', messages=[{'role': 'user','content':
-            f'{system_prompt} {schema_prompt} {query_prompt_gene} Generate a SPARQL query given this {extracted_id_ls[0]}.'}])
-        end = time.time()
-        elapsed = end - start
+    cached = getattr(details, "cached_tokens", 0) or 0
+    written = getattr(details, "cache_write_tokens", 0) or 0
+    ordinary = usage.prompt_tokens - cached - written
 
+    cost = (
+        ordinary * 10
+        + cached * 1
+        + written * 12.5
+        + usage.completion_tokens * 50
+    ) / 1_000_000 #the cost of token is categorized into three groups, cached, written, usage
 
-        return {"query":gpt_response.choices[0].message.content,
-                "prompt_tokens":gpt_response.usage.prompt_tokens,
-                "completion_tokens":gpt_response.usage.completion_tokens,
-                "total_tokens":gpt_response.usage.total_tokens,
-                "response_time": elapsed}
+    print(f"Estimated cost (USD): ${cost:.5f}")
 
-    elif len(extracted_id_ls) >= 2:
-        return f'too much valid input: {extracted_id_ls}'
-
+    return {"query":gpt_response.choices[0].message.content}
 
 if __name__ == '__main__':
     app.run(port=5000)
 
 
-
-'''
-        pmw_response = requests.get(
-            endpoint,
-            params={
-                "query": gpt_response.choices[0].message.content,
-                "format": "application/sparql-results+json"
-            }
-        )
-'''
