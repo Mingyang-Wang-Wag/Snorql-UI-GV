@@ -215,10 +215,17 @@ footer p{
     margin: 3px;
 }
 
-.english-question{
+.english-question {
     display: inline-block;
     width: 400px;
     margin-right: 5px;
+    vertical-align: bottom;
+    resize: none;
+}
+
+#ask-button {
+    vertical-align: bottom;
+    margin-bottom: 0;
 }
 
 @media (max-width: 600px) {

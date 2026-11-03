@@ -1,5 +1,5 @@
 #server imports
-from flask import request
+from flask import request, jsonify
 from server.GV_server import app
 
 #GPT import
@@ -56,6 +56,35 @@ def main():
     print(f"Estimated cost (USD): ${cost:.5f}")
 
     return {"query":gpt_response.choices[0].message.content}
+
+#for notebook function
+notes_memory = {}
+@app.route("/question-notes", methods=["GET"])
+def get_question_notes():
+    session_id = request.args.get("session_id", "").strip()
+
+    if not session_id:
+        return jsonify({"error": "Missing session_id"}), 400
+
+    return jsonify({
+        "questions": notes_memory.get(session_id, [])
+    })
+
+@app.route("/question-notes", methods=["PUT"])
+def save_question_notes():
+    session_id = request.args.get("session_id", "").strip()
+
+    if not session_id:
+        return jsonify({"error": "Missing session_id"}), 400
+
+    data = request.get_json()
+
+    if not isinstance(data, dict) or not isinstance(data.get("questions"), list):
+        return jsonify({"error": "questions must be a list"}), 400
+
+    notes_memory[session_id] = data["questions"][:5]
+
+    return jsonify({"saved": True})
 
 if __name__ == '__main__':
     app.run(port=5000)

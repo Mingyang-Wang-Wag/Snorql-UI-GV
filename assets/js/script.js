@@ -127,19 +127,111 @@ jQuery(document).ready(function() { // the index.html (webpage builder) build pa
             window.open("graph.html", "graphVizWindow", // open the popup, graph.html is the page to load, graphVizWindow is the name for window
                 "width=1000,height=700,resizable=yes,scrollbars=yes"); //setting of the popup window
         });
+        var notesSessionId = sessionStorage.getItem("pmwNotesSessionId");
+        if (!notesSessionId) {
+            notesSessionId = crypto.randomUUID();
+            sessionStorage.setItem("pmwNotesSessionId", notesSessionId);
+        }
 
-        jQuery("#ask-button").on("click", function(){ //search the page for the element with id ask-button
-            var en_question = jQuery("#english-question-input").val(); //read whatever text is currently in the input box
+        var notesUrl = "http://localhost:5000/question-notes?session_id="
+            + encodeURIComponent(notesSessionId);
 
-            fetch("http://localhost:5000/translate", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(en_question)
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            console.log(data);   //visible in the browser's dev console
-            editor.getDoc().setValue(data.query); // fill the generated query into the textbox
+        var questionHistory = [];
+        var notesLoaded = false;
+        var saveQueue = Promise.resolve();
+
+        function renderQuestions() {
+            var box = jQuery("#question-history").empty();
+
+            if (!questionHistory.length) {
+                box.text("The last 5 questions asked will be shown here.");
+            }
+
+            questionHistory.forEach(function (item, index) {
+                jQuery("<p>")
+                    .text((index + 1) + ". " + item.question)
+                    .appendTo(box);
+            });
+        }
+
+        function saveNotes() {
+            var payload = JSON.stringify({ questions: questionHistory });
+
+            saveQueue = saveQueue.then(function () {
+                return fetch(notesUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload,
+                    keepalive: true
+                });
+            }).then(function (response) {
+                if (!response.ok) throw new Error("HTTP " + response.status);
+            }).catch(function (error) {
+                console.error("Could not save question history:", error);
+                jQuery("#question-history")
+                    .append(jQuery("<p>").text("Question history could not be saved."));
+            });
+        }
+
+        function addQuestion(question) {
+            questionHistory.unshift({ question: question });
+            questionHistory = questionHistory.slice(0, 5);
+            renderQuestions();
+            saveNotes();
+        }
+
+        function loadNotes() {
+            jQuery("#ask-button").prop("disabled", true);
+
+            fetch(notesUrl, { cache: "no-store" })
+                .then(function (response) {
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    questionHistory = data.questions.slice(0, 5);
+                    renderQuestions();
+                    notesLoaded = true;
+                })
+                .catch(function (error) {
+                    console.error("Could not load question history:", error);
+                    jQuery("#question-history").text(
+                        "Question history could not be loaded. You can still submit questions."
+                    );
+                })
+                .finally(function () {
+                    jQuery("#ask-button").prop("disabled", false);
+                });
+        }
+
+
+        jQuery("#ask-button").on("click", function () {
+            var en_question = jQuery("#english-question-input").val().trim();
+            if (!en_question) return;
+
+            if (notesLoaded) {
+                addQuestion(en_question);
+            }
+
+            fetch("http://localhost:5000/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(en_question)
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log(data);
+                    editor.getDoc().setValue(data.query);
+                })
+                .catch(function (error) {
+                    console.error("Question submission failed:", error);
+                });
         });
-        });
 
+        loadNotes();
         jQuery("#export-csv").on("click",function(){
             var query = editor.getDoc().getValue();
             var queryText = getPrefixes() + query;

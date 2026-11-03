@@ -88,11 +88,22 @@
 						<input id="reset-button" type="button" class="btn btn-danger" value="Reset" />
 						<input id="graph-viz-button" type="button" class="btn btn-info" value="Graph Visualization" /> <!-- new graph visualization button -->
 
-					</div>
+                        </div>
 
                     <div class="text-to-SPARQL">
-                        <input id="english-question-input" type="text" class="english-question form-control" placeholder="Input your English question here" />
-                        <input id="ask-button" type="button" class="btn btn-success" value="Submit">
+                        <textarea id="english-question-input"
+                                  class="english-question form-control"
+                                  rows="3" placeholder="Your question:"></textarea>
+                        <input id="ask-button" type="button"
+                               class="btn btn-success" value="Submit">
+
+                        <div id="question-history" class="well"
+                             style="width: 400px; height: 80px; padding: 6px 12px; overflow-y: auto; margin-top: 8px;">
+                            <p class="text-muted">
+                                    The last 5 questions that has been asked will be shown here.
+                            </p>
+                        </div>
+
                     </div>
 
                     <div class="output-utility-actions">
@@ -104,9 +115,6 @@
 						<input id="show-prefixes" type="button" class="btn btn-light" value="Show Prefixes" />
                     </div>
                     </div>
-
-
-
 
 				</div>
 				
