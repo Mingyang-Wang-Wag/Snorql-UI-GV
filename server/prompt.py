@@ -225,7 +225,7 @@ Use supplied IDs or recorded labels; do not invent identifiers.
 - Missing data or empty results do not establish biological absence.
 """
 
-#the complete example: english question and the correct SPARQL query.
+#the example queries
 example_query1 = """
 Question: Which proteins are associated with AT3G51240?
 
@@ -283,7 +283,7 @@ ORDER BY ?trait
 """
 
 example_query3 = """
-Question: Show the Evidence node, TO terms, proteins, reactions, substrates and products linked to AT3G51240. Include names for TO terms, proteins and metabolites, and keep available information when a branch is missing.
+Question: Show the Evidence node, TO terms, proteins, reactions, substrates and products linked to AT3G51240. 
 
 SPARQL:
 PREFIX wp: <http://vocabularies.wikipathways.org/wp#>

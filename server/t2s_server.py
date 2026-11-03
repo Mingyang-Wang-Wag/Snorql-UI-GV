@@ -1,21 +1,15 @@
 #server imports
 from flask import request
-import requests
-
-import requests
-from GV_server import app
+from server.GV_server import app
 
 #GPT import
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-
-#testing import
-import re
 import time
 
 #prompt import
-from prompt import system_prompt, schema_prompt, example_query1, example_query2, example_query3
+from server.prompt import system_prompt, schema_prompt, example_query1, example_query2, example_query3
 
 #setting
 endpoint_pmw = "https://plantmetwiki.bioinformatics.nl/sparql"

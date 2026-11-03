@@ -230,21 +230,9 @@ def make_nodes(rows, entity_ls, label_dict):
 
     return nodes
 
-@app.route("/graph", methods=["POST"]) #when the server receive a POST, run the function below
-def graph():
-    """Turn SPARQL query results (JSON ) into graph nodes and edges.
-
-    return: JSON {"nodes": [...], "edges": [...]}
-    """
-    data = request.get_json()
-
-    var_names = data['head']['vars']
-    entity_ls, label_dict  = separate_columns(var_names)
-
-    nodes = make_nodes(data["results"]["bindings"], entity_ls, label_dict)
-
+def make_edges(rows, entity_ls):
     edges = {}
-    for row in data["results"]["bindings"]:
+    for row in rows:
         prev_uri = None
         for entity in entity_ls:
             entity_uri = row[entity]['value']
@@ -255,9 +243,9 @@ def graph():
                         interaction_ls = get_interaction(prev_uri, entity_uri)
                         if interaction_ls:
                             interaction_label = ""
-                            if 'Catalysis' in interaction_ls: #unique interaction node between protein and reaction
+                            if 'Catalysis' in interaction_ls:  # unique interaction node between protein and reaction
                                 interaction_label = 'Catalysis'
-                            elif 'TranscriptionTranslation' in interaction_ls: #unique interaction node between gene and protein
+                            elif 'TranscriptionTranslation' in interaction_ls:  # unique interaction node between gene and protein
                                 interaction_label = 'TranscriptionTranslation'
                             edges[edge_key] = {
                                 "source": prev_uri,
@@ -282,6 +270,24 @@ def graph():
                     "target": target,
                     "label": relation
                 }
+
+    return edges
+
+@app.route("/graph", methods=["POST"]) #when the server receive a POST, run the function below
+def graph():
+    """Turn SPARQL query results (JSON ) into graph nodes and edges.
+
+    return: JSON {"nodes": [...], "edges": [...]}
+    """
+    data = request.get_json()
+
+    var_names = data['head']['vars']
+    entity_ls, label_dict  = separate_columns(var_names)
+
+    nodes = make_nodes(data["results"]["bindings"], entity_ls, label_dict)
+    edges = make_edges(data["results"]["bindings"], entity_ls)
+
+
     #JSON dose not accept tuple as key, only string
     #drop out the key, the uri has a copy in the values
     node_list = list(nodes.values())

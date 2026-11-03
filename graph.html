@@ -42,13 +42,14 @@
 
 	<p class="text-muted">Raw database output (this is what the graph will be built from):</p>
 	<pre id="results-display"></pre>
+
 <!-- The logic part -->
 	<script type="text/javascript">
 		// Both values are passed from the main page via sessionStorage
 		// (both pages belong to the same site, so they share it).
 
 		// 1. The query text, saved when the button was clicked.
-        var query = sessionStorage.getItem("graphVizQuery");       // read the stored query text
+        var query = window.opener.sessionStorage.getItem("graphVizQuery");       // read the stored query text
         var queryBox = document.getElementById("query-display");   // find text box 1
 
         if (query && query.trim() !== "") {
@@ -57,7 +58,7 @@
             queryBox.textContent = "(the query box is empty)"; // nothing or only spaces -> message
         }
 		// 2. The raw SPARQL JSON results, saved when the table was rendered.
-		var resultsText = sessionStorage.getItem("graphVizResults");
+		var resultsText = window.opener.sessionStorage.getItem("graphVizResults");
 		var resultsBox = document.getElementById("results-display");
 		if (resultsText) {
 			try {
